@@ -2,8 +2,27 @@
 <title>Hello, World!</title>
 <h1>Hello, your name is ?</h1>
 <p></p>
-<form action="/say_hello" method="post">
- <label>Name:</label>
- <input type="textbox" name="username">
- <input type="submit" value="Submit">
+<form action={{ url_for('user_cookies') }} method="post">
+    <label>Register a new account(cookies):</label>
+    User ID: <input type="textbox" name="user_id">
+    Password: <input type="textbox" name="password">
+    <input type="submit" value="Submit">
+</form>
+<form action={{ url_for('login_cookies') }} method="post">
+    <label>Login(cookies):</label>
+    User ID: <input type="textbox" name="user_id">
+    Password: <input type="textbox" name="password">
+    <input type="submit" value="Login">
+</form>
+<form action={{ url_for('user_sessions') }} method="post">
+    <label>Register a new account(sessions):</label>
+    User ID: <input type="textbox" name="user_id">
+    Password: <input type="textbox" name="password">
+    <input type="submit" value="Submit">
+</form>
+<form action={{ url_for('login_sessions') }} method="post">
+    <label>Login(sessions):</label>
+    User ID: <input type="textbox" name="user_id">
+    Password: <input type="textbox" name="password">
+    <input type="submit" value="Login">
 </form>
