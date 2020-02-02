@@ -1,0 +1,31 @@
+<!doctype html>
+<title>Hello, World!</title>
+{% if current_user.is_authenticated %}
+<h1>Hello, {{ current_user.id }}</h1>
+<p></p>
+<form action={{ url_for('user_edit') }} method="get">
+    <input type="submit" value="Edit">
+</form>
+<form action={{ url_for('view_data') }} method="get">
+    <input type="submit" value="View Data">
+</form>
+</form>
+<form action={{ url_for('logout') }} method="get">
+    <input type="submit" value="Logout">
+</form>
+{% else %}
+<h1>Hello, your account is ?</h1>
+<p></p>
+<form action={{ url_for('sign_up') }} method="post">
+    <label>Register a new account:</label>
+    User ID: <input type="textbox" name="user_id">
+    Password: <input type="textbox" name="password">
+    <input type="submit" value="Sign up">
+</form>
+<form action={{ url_for('login') }} method="post">
+    <label>Login:</label>
+    User ID: <input type="textbox" name="user_id">
+    Password: <input type="textbox" name="password">
+    <input type="submit" value="Login">
+</form>
+{% endif %}
