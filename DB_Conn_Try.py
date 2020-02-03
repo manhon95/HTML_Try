@@ -3,7 +3,7 @@ import sqlite3
 def add_account(user_id, user_pass):
     try:
         db = sqlite3.connect('DB_Try.db')
-        db.execute("insert into account('ac_id', 'ac_pass') values (:user_id, :user_pass)", {'user_id':user_id, 'user_pass':user_pass})
+        db.execute("insert into account('ac_id', 'ac_pass', 'is_admin') values (:user_id, :user_pass, 'False')", {'user_id':user_id, 'user_pass':user_pass})
         db.commit()
         db.close()
         print(user_id + ' added to DB')
@@ -51,3 +51,10 @@ def delete_user(user_id):
     db.close()
     print(user_id + ' delete')
     return True
+
+def check_user_is_admin(user_id):
+    db = sqlite3.connect('DB_Try.db')
+    is_admin = eval(db.execute("select is_admin from account where ac_id = :user_id", {'user_id':user_id}).fetchall()[0][0])
+    db.commit()
+    db.close()
+    return is_admin

@@ -12,6 +12,8 @@ login_manager.session_protection = "strong"
 login_manager.login_view = 'home'
 
 class User(UserMixin):
+    def __init__(self):
+        self.is_admin = False
     pass
 
 @login_manager.user_loader  
@@ -20,6 +22,7 @@ def user_loader(user_id):
         return None
     user = User()
     user.id = user_id
+    user.is_admin = DB_Conn_Try.check_user_is_admin(user_id)
     return user
 
 
@@ -40,14 +43,18 @@ def home():
 def sign_up():
     user_id = request.form.get('user_id')
     user_pass = request.form.get('password')
-    if DB_Conn_Try.add_account(user_id, user_pass):
-        user = User()
-        user.id = user_id
-        login_user(user)
-        flash('New account created successfully.')
-        return redirect(url_for('home'))
-    else:
-        return "Add account Fail"
+    user_pass2 = request.form.get('password2')
+    user_id_list = DB_Conn_Try.get_user_id_list()
+    if user_id_list[0]:
+        if user_id not in user_id_list[1]:
+            if user_pass == user_pass2:
+                if DB_Conn_Try.add_account(user_id, user_pass):
+                    user = User()
+                    user.id = user_id
+                    login_user(user)
+                    flash('New account created successfully.')
+                    return redirect(url_for('home'))
+    return "Add account Fail"
 
 
 @app.route('/login', methods=['POST'])
@@ -95,6 +102,8 @@ def user_edit():
 @login_required
 def view_data():
     if request.method == 'GET':
+        if current_user.is_admin:
+            return 'someadmindata'
         return 'somedata'
 
 
