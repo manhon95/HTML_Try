@@ -5,22 +5,23 @@ import os
 
 #-------------------------------------Init----------------------------------------
 app = Flask(__name__)
-app.secret_key = os.urandom(16)
+app.secret_key = os.urandom(16) 
 
 login_manager = LoginManager(app)
 login_manager.session_protection = "strong"
-login_manager.login_view = 'home'
+login_manager.login_view = 'home' #unauthenticated user will redirect to home() if they access to @login_required page
 
 class User(UserMixin):
+    #'User' class inherits 'UserMixin' class from flask-login which contain 4 properties and method:is_authenticated, is_active, is_anonymous and get_id()
     def __init__(self):
-        self.is_admin = False
+        self.is_admin = False #here we add a new property is_admin to identify if a user is admin or not
     pass
 
 @login_manager.user_loader  
 def user_loader(user_id):
-    if user_id not in DB_Conn_Try.get_user_id_list()[1]:
+    if user_id not in DB_Conn_Try.get_user_id_list()[1]:    #if user_id is not in our database
         return None
-    user = User()
+    user = User()                                           #else create a new user object and initialize its id and is_admin properties
     user.id = user_id
     user.is_admin = DB_Conn_Try.check_user_is_admin(user_id)
     return user
@@ -46,13 +47,13 @@ def sign_up():
     user_pass2 = request.form.get('password2')
     user_id_list = DB_Conn_Try.get_user_id_list()
     if user_id_list[0]:
-        if user_id not in user_id_list[1]:
-            if user_pass == user_pass2:
+        if user_id not in user_id_list[1]:                          #login fail if Current user_id list already contain the new user_id
+            if user_pass == user_pass2:                             #login fail if 'password' field not match 'confirm password' field
                 if DB_Conn_Try.add_account(user_id, user_pass):
                     user = User()
                     user.id = user_id
                     login_user(user)
-                    flash('New account created successfully.')
+                    #flash('New account created successfully.')
                     return redirect(url_for('home'))
     return "Add account Fail"
 
@@ -65,16 +66,14 @@ def login():
         user = User()
         user.id = user_id
         login_user(user)
-        flash('Logged in successfully.')
+        #flash('Logged in successfully.')
         return redirect(url_for('home'))
-    else:
-        return "Login Fail"
+    return "Login Fail"
 
 
 @app.route('/logout', methods=['GET'])
 @login_required
 def logout():
-    print('logout')
     print(current_user.id + ' logout')
     logout_user()
     return redirect(url_for('home'))
@@ -83,6 +82,7 @@ def logout():
 @app.route('/delete', methods=['GET'])
 @login_required
 def delete_user():
+    print(current_user.id + ' deleted')
     DB_Conn_Try.delete_user(current_user.id)
     logout_user()
     return redirect(url_for('home'))
@@ -102,7 +102,7 @@ def user_edit():
 @login_required
 def view_data():
     if request.method == 'GET':
-        if current_user.is_admin:
+        if current_user.is_admin:           #view_data will identify if user is admin or not and show respective result
             return 'someadmindata'
         return 'somedata'
 
