@@ -2,13 +2,17 @@ from flask import Flask, request, render_template, redirect, url_for, make_respo
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import DB_Conn_Try
 import os
+import ConfigParser
+ 
+config = ConfigParser.ConfigParser()
+config.read('Config.ini')
 
 #-------------------------------------Init----------------------------------------
 app = Flask(__name__)
 app.secret_key = os.urandom(16) 
 
 login_manager = LoginManager(app)
-login_manager.session_protection = "strong"
+login_manager.session_protection = config.get('Login_Manager', 'session_protection')
 login_manager.login_view = 'home' #unauthenticated user will redirect to home() if they access to @login_required page
 
 class User(UserMixin):
