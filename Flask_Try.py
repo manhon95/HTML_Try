@@ -84,7 +84,7 @@ def login():
             user = User()
             user.id = user_name
             login_user(user)
-            flash('Logged in successfully!')
+            flash('Log in successful!')
         else:
             flash('Incorrect username/password!')
     except Exception as e:
@@ -115,14 +115,27 @@ def delete_user():                                  #TODO: try and print error m
 @app.route('/user_edit', methods=['GET', 'POST'])
 @login_required
 def user_edit():
-    if request.method == 'GET':
-        return render_template('user_edit.html')    
-    new_fullname = request.form.get('fullname')
-    if DB_Conn_Try.edit_fullname(current_user.id, new_fullname):
-        flash('Changed fullname to ' + new_fullname + '!')
+    if current_user.id == 'root':
+        if request.method == 'POST':
+            is_admin_list = []
+            for user_name in DB_Conn_Try.get_user_name_list():
+                print(request.form.get('victor3'))
+                if user_name != 'root' and request.form.get(user_name):
+                    print(request.form.get(user_name))
+                    is_admin_list.append(user_name)
+            DB_Conn_Try.group_set_user_is_admin(is_admin_list)
+            flash('Update successful!')
+        user_list =  DB_Conn_Try.get_user_data_list()
+        return render_template('user_edit.html', user_list=user_list)
     else:
-        flash('Changed fail.')
-    return render_template('user_edit.html')
+        if request.method == 'GET':
+            return render_template('user_edit.html')    
+        new_fullname = request.form.get('fullname')
+        if DB_Conn_Try.edit_fullname(current_user.id, new_fullname):
+            flash('Changed fullname to ' + new_fullname + '!')
+        else:
+            flash('Changed fail.')
+        return render_template('user_edit.html')
 
 
 @app.route('/view_data', methods=['GET', 'POST'])

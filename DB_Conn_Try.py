@@ -69,3 +69,12 @@ def get_user_is_admin(user_name):
 
 def get_user_id(user_name):
     return user_data.query.filter(user_data.username == user_name).one().id
+
+def get_user_data_list():
+    return user_data.query.all()
+
+def group_set_user_is_admin(user_name_list):
+    user_data.query.filter(user_data.username != 'root').update({user_data.is_admin: False}, synchronize_session=False)
+    user_data.query.filter(user_data.username.in_(user_name_list)).update({user_data.is_admin: True}, synchronize_session=False)
+    db.session.commit()
+    return True

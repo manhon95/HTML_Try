@@ -10,18 +10,49 @@
     </ul>
     {% endif %}
 {% endwith %}
-{% if current_user.id != 'root' %}
-<form action={{ url_for('user_edit') }} method="post">
- <label>Full name:</label>
- <input type="textbox" name="fullname">
- <input type="submit" value="edit">
-</form>
+{% if current_user.id == 'root' %}
+    <h2>User Table</h2>
+    <form action={{ url_for('user_edit') }} method="post">
+    <table>
+    <style>
+        table {font-family: arial, sans-serif; width: 100%;}
+        td, th {border: 1px solid #dddddd; padding: 8px; text-align: left;}
+        tr:nth-child(even) {background-color: #dddddd;}
+    </style>
+    <tr>
+        <th>User_ID</th>
+        <th>Username</th>
+        <th>Admin</th>
+    </tr>
+    {% for user_data in user_list %}
+        {% if user_data.username != 'root' %}
+        <tr>
+            <td>{{ user_data.id }}</td>
+            <td>{{ user_data.username }}</td>
+            {% if user_data.is_admin %}
+            <td><input type="checkbox" name={{ user_data.username }} value={{ user_data.id }} checked/></td>
+            {% else %}
+            <td><input type="checkbox" name={{ user_data.username }} value={{ user_data.id }}/></td>
+            {% endif %}
+        </tr>
+        {% endif %}
+    {% endfor %}
+    </table>
+    <input type="submit" value="Submit">
+    </form>
+{% else %}
+    <form action={{ url_for('user_edit') }} method="post">
+    <label>Full name:</label>
+    <input type="textbox" name="fullname">
+    <input type="submit" value="edit">
+    </form>
 
-<form action="/delete" method="get">
-    <input type="submit" value="Delete Account">
-</form>
+    <form action="/delete" method="get">
+        <input type="submit" value="Delete Account">
+    </form>
 {% endif %}
 </form>
 <form action={{ url_for('home') }} method="get">
     <input type="submit" value="Back">
 </form>
+</html>
