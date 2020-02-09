@@ -1,60 +1,71 @@
+from flask_sqlalchemy import SQLAlchemy
+import os
 import sqlite3
+import traceback
 
-def add_account(user_id, user_pass):
+db = SQLAlchemy()
+
+def init_database(app, project_dir):
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_dir, 'DB_Try.db')
+    with app.app_context():
+        db.init_app(app)
+        db.create_all()
+        db.session.commit()
+
+class user_data(db.Model):
+    __tablename__ = 'Users'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(80), nullable=False)
+    fullname = db.Column(db.String(80))
+    is_admin = db.Column(db.Boolean, nullable=False)
+
+    def __init__(self, user_name, user_pass):
+        self.username = user_name
+        self.password = user_pass
+        self.is_admin = False
+
+def add_account(user_name, user_pass):
     try:
-        db = sqlite3.connect('DB_Try.db')
-        db.execute("insert into account('ac_id', 'ac_pass', 'is_admin') values (:user_id, :user_pass, 'False')", {'user_id':user_id, 'user_pass':user_pass})
-        db.commit()
-        db.close()
-        print(user_id + ' added to DB')
+        db.session.add(user_data(user_name, user_pass))
+        db.session.commit()
+        print(user_name + ' added to DB')
         return True
     except:
-        db.close()
+        traceback.print_exc()
         return False
 
-def edit_account(user_id, new_username):
-    db = sqlite3.connect('DB_Try.db')
-    db.execute("update account set ac_name = :new_username where ac_id = :user_id", {'new_username':new_username, 'user_id':user_id})
-    db.commit()
-    db.close()
-    print(user_id + ' changed name to ' + new_username)
-    return True
+def edit_fullname(user_name, new_fullname):
+    try:
+        user_data.query.filter(user_data.username == user_name).update({user_data.fullname: new_fullname})
+        db.session.commit()
+        print(user_name + ' changed name to ' + new_fullname)
+        return True
+    except:
+        traceback.print_exc()
+        return False
 
-def password_match(user_id, user_pass):
-    db = sqlite3.connect('DB_Try.db')
-    match_case_count = db.execute("select count(*) from account where ac_id = :user_id and ac_pass = :user_pass", {'user_id':user_id, 'user_pass':user_pass}).fetchall()[0][0]
-    db.close()
+def password_match(user_name, user_pass):
+    match_case_count = user_data.query.filter(user_data.username == user_name, user_data.password == user_pass).count()
     return (match_case_count > 0)
 
-def get_user_name(user_id):
-    db = sqlite3.connect('DB_Try.db')
-    info = db.execute("select ac_name from account where ac_id = :user_id", {'user_id':user_id}).fetchall()
-    print(user_id + ' get from DB')
-    db.close()
-    return True, info
+def get_user_name_list():
+    user_name_list = []
+    for data in user_data.query.all():
+        user_name_list.append(data.username)
+    #print(user_name_list)
+    return user_name_list
 
-def get_user_id_list():
-    db = sqlite3.connect('DB_Try.db')
-    user_id_list_raw = db.execute("select ac_id from account;").fetchall()
-    user_id_list = []
-    for user_id in user_id_list_raw:
-        user_id_list.append(str(user_id[0]))
-    print('user_id_list:')
-    print(user_id_list)
-    db.close()
-    return True, user_id_list
-
-def delete_user(user_id):
-    db = sqlite3.connect('DB_Try.db')
-    db.execute("delete from account where ac_id = :user_id", {'user_id':user_id})
-    db.commit()
-    db.close()
-    print(user_id + ' delete')
+def delete_user(user_name):
+    user_data.query.filter(user_data.username == user_name).delete()
+    db.session.commit()
+    print(user_name + ' delete')
     return True
 
-def check_user_is_admin(user_id):
-    db = sqlite3.connect('DB_Try.db')
-    is_admin = eval(db.execute("select is_admin from account where ac_id = :user_id", {'user_id':user_id}).fetchall()[0][0])
-    db.commit()
-    db.close()
+def get_user_is_admin(user_name):
+    is_admin = user_data.query.filter(user_data.username == user_name).one().is_admin
     return is_admin
+
+def get_user_id(user_name):
+    return user_data.query.filter(user_data.username == user_name).one().id

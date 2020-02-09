@@ -2,14 +2,17 @@ from flask import Flask, request, render_template, redirect, url_for, make_respo
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import DB_Conn_Try
 import os
-import ConfigParser
- 
-config = ConfigParser.ConfigParser()
-config.read('Config.ini')
+import configparser
 
-#-------------------------------------Init----------------------------------------
+project_dir = os.path.abspath(os.path.dirname(__file__))
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+#-------------------------------------Init flask app----------------------------------------
 app = Flask(__name__)
-app.secret_key = os.urandom(16) 
+app.secret_key = os.urandom(16)
+
+DB_Conn_Try.init_database(app, project_dir)
 
 login_manager = LoginManager(app)
 login_manager.session_protection = config.get('Login_Manager', 'session_protection')
@@ -22,12 +25,13 @@ class User(UserMixin):
     pass
 
 @login_manager.user_loader  
-def user_loader(user_id):
-    if user_id not in DB_Conn_Try.get_user_id_list()[1]:    #if user_id is not in our database
+def user_loader(user_name):
+    if user_name not in DB_Conn_Try.get_user_name_list():    #if user_name is not in our database
+        print('user loadfail')
         return None
-    user = User()                                           #else create a new user object and initialize its id and is_admin properties
-    user.id = user_id
-    user.is_admin = DB_Conn_Try.check_user_is_admin(user_id)
+    user = User()                                           #else create a new user object and initialize its name, id and is_admin properties
+    user.id = user_name                                     #flask-login module must use user.id as identification, user.name will return error
+    user.is_admin = DB_Conn_Try.get_user_is_admin(user_name)
     return user
 
 
@@ -46,49 +50,65 @@ def home():
 
 @app.route('/sign_up', methods=['POST'])
 def sign_up():
-    user_id = request.form.get('user_id')
+    user_name = request.form.get('user_name')
     user_pass = request.form.get('password')
     user_pass2 = request.form.get('password2')
-    user_id_list = DB_Conn_Try.get_user_id_list()
-    if user_id_list[0]:
-        if user_id not in user_id_list[1]:                          #login fail if Current user_id list already contain the new user_id
-            if user_pass == user_pass2:                             #login fail if 'password' field not match 'confirm password' field
-                if DB_Conn_Try.add_account(user_id, user_pass):
-                    user = User()
-                    user.id = user_id
-                    login_user(user)
-                    #flash('New account created successfully.')
-                    return redirect(url_for('home'))
-    return "Add account Fail"
+    try:
+        user_name_list = DB_Conn_Try.get_user_name_list()
+        sign_up_requirements = {'Username is already used!': (user_name not in user_name_list),     #login fail if Current user_name list already contain the new user_name
+                                'Password not match!': (user_pass == user_pass2)}                   #login fail if 'password' field not match 'confirm password' field
+        if all(sign_up_requirements.values()):
+                DB_Conn_Try.add_account(user_name, user_pass)
+                user = User()
+                user.id = user_name
+                login_user(user)
+                flash('New account created successfully.')
+        else:
+            fail_msg = ''
+            for req in sign_up_requirements:
+                if not sign_up_requirements[req]:
+                    fail_msg += req + '\n'
+            flash(fail_msg)
+    except Exception as e:
+        print(e)
+        flash('Cannot create account')
+    return redirect(url_for('home'))
 
 
 @app.route('/login', methods=['POST'])
 def login():
-    user_id = request.form.get('user_id')
+    user_name = request.form.get('user_name')
     user_pass = request.form.get('password')
-    if DB_Conn_Try.password_match(user_id, user_pass):
-        user = User()
-        user.id = user_id
-        login_user(user)
-        #flash('Logged in successfully.')
-        return redirect(url_for('home'))
-    return "Login Fail"
+    try:
+        if DB_Conn_Try.password_match(user_name, user_pass):
+            user = User()
+            user.id = user_name
+            login_user(user)
+            flash('Logged in successfully!')
+        else:
+            flash('Incorrect username/password!')
+    except Exception as e:
+        print(e)
+        flash('Logged in fail!')
+    return redirect(url_for('home'))
 
 
 @app.route('/logout', methods=['GET'])
 @login_required
-def logout():
+def logout():                                       #TODO: try and print error msg
     print(current_user.id + ' logout')
     logout_user()
+    flash('You logged out!')
     return redirect(url_for('home'))
 
 
 @app.route('/delete', methods=['GET'])
 @login_required
-def delete_user():
+def delete_user():                                  #TODO: try and print error msg
     print(current_user.id + ' deleted')
-    DB_Conn_Try.delete_user(current_user.id)
+    DB_Conn_Try.delete_user(current_user.id)        
     logout_user()
+    flash('Account deleted!')
     return redirect(url_for('home'))
 
 
@@ -96,9 +116,12 @@ def delete_user():
 @login_required
 def user_edit():
     if request.method == 'GET':
-        return render_template('user_edit.html')
-    user_name = request.form.get('user_name')
-    DB_Conn_Try.edit_account(current_user.id, user_name)
+        return render_template('user_edit.html')    
+    new_fullname = request.form.get('fullname')
+    if DB_Conn_Try.edit_fullname(current_user.id, new_fullname):
+        flash('Changed fullname to ' + new_fullname + '!')
+    else:
+        flash('Changed fail.')
     return render_template('user_edit.html')
 
 
