@@ -1,13 +1,19 @@
 from flask_sqlalchemy import SQLAlchemy
 import os
-import sqlite3
 import traceback
+import configparser
 
 db = SQLAlchemy()
 
-def init_database(app, project_dir):
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_dir, 'DB_Try.db')
+def init_database(app, config, project_dir):
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.getboolean('Database', 'SQLALCHEMY_TRACK_MODIFICATIONS')
+    if config.get('Database', 'db_system') == 'sqlite':
+        db_url = 'sqlite:///' + os.path.join(project_dir, config.get('sqlite', 'db_name'))
+    elif config.get('Database', 'db_system') == 'mysql':
+        db_url = config.get('mysql', 'url')
+    else:
+        raise Exception('cannot read Database.db_system config')
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     with app.app_context():
         db.init_app(app)
         db.create_all()

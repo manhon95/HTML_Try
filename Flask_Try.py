@@ -3,6 +3,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 import DB_Conn_Try
 import os
 import configparser
+import traceback
 
 project_dir = os.path.abspath(os.path.dirname(__file__))
 config = configparser.ConfigParser()
@@ -12,7 +13,7 @@ config.read('config.ini')
 app = Flask(__name__)
 app.secret_key = os.urandom(16)
 
-DB_Conn_Try.init_database(app, project_dir)
+DB_Conn_Try.init_database(app, config, project_dir)
 
 login_manager = LoginManager(app)
 login_manager.session_protection = config.get('Login_Manager', 'session_protection')
@@ -69,8 +70,8 @@ def sign_up():
                 if not sign_up_requirements[req]:
                     fail_msg += req + '\n'
             flash(fail_msg)
-    except Exception as e:
-        print(e)
+    except:
+        traceback.print_exc()
         flash('Cannot create account')
     return redirect(url_for('home'))
 
@@ -87,8 +88,8 @@ def login():
             flash('Log in successful!')
         else:
             flash('Incorrect username/password!')
-    except Exception as e:
-        print(e)
+    except:
+        traceback.print_exc()
         flash('Logged in fail!')
     return redirect(url_for('home'))
 
@@ -114,7 +115,7 @@ def delete_user():                                  #TODO: try and print error m
 
 @app.route('/user_edit', methods=['GET', 'POST'])
 @login_required
-def user_edit():
+def user_edit():                                    #TODO: try and print error msg
     if current_user.id == 'root':
         if request.method == 'POST':
             is_admin_list = []
@@ -143,7 +144,7 @@ def user_edit():
 def view_data():
     if request.method == 'GET':
         if current_user.is_admin:           #view_data will identify if user is admin or not and show respective result
-            return 'someadmindata'
+            return 'some_admin_data'
         return 'somedata'
 
 
